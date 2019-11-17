@@ -2,6 +2,7 @@ from flask import Flask
 from flask import jsonify
 from flask import Response
 from flask_cors import CORS
+from test import *
 import json
 import random
 import time
@@ -21,6 +22,7 @@ shimmer_data["x"] = []
 shimmer_data["y"] = []
 
 data = {}
+ran_sig = []
 
 def generateRandom():
     #Random generate states
@@ -45,20 +47,31 @@ def generateRandom():
     global current_step
     global freq_data
     global shimmer_data
+    
     current_step += 1
+    rand = random.randint(0, 5)
+    ran_sig.append(rand)
     if(len(freq_data["x"]) > time_slice_len):
         freq_data["x"].pop(0)
         freq_data["y"].pop(0)
 
     freq_data["x"].append(current_step)
-    freq_data["y"].append(random.randint(0, 5))
+    if(current_step <= 20):
+        freq_data["y"].append(-1)
+    up_samp = up_sampling(ran_sig,10)
+    if(current_step > 20):
+        freq = find_freq(up_samp[current_step*10-200:current_step*10-100],10)
+        print(freq)
+        freq_data["y"].append(freq)
+        #freq_data["y"].append(random.randint(0, 5))
 
     if(len(shimmer_data["x"]) > time_slice_len):
         shimmer_data["x"].pop(0)
         shimmer_data["y"].pop(0)
 
     shimmer_data["x"].append(current_step)
-    shimmer_data["y"].append(random.randint(8, 10))
+    #shimmer_data["y"].append(random.randint(8, 10))
+    shimmer_data["y"].append(rand)
 
     for i in range(0,len(state)):
         state[i] += rand_state[i]

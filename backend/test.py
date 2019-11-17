@@ -110,6 +110,8 @@ def init_5_states():
 def five_states(arr):
     L = len(arr)
     out = [0,0,0,0,0]
+    if(L == 0):
+        return out
     m = max(arr)
     out[find_state(arr[0],m)-1] = 1
     for i in range(L-1):
@@ -139,6 +141,9 @@ def most_zeros(arr):
     state1 = 1
     state2 = 1
     last_nums = [0,0,0]
+    if(len(arr) == 0):
+        print("lenarr = 0\n")
+        return[0,0]
     top = max(arr)
     but = min(arr)
     while(True):
@@ -162,10 +167,16 @@ def find_freq(arr,up_rate):
     L = int(num_zeros)
     estimate_time = 0
     if(L == 1):
+        print("L == 1")
         return -1
     for i in range(L-1):
         estimate_time = estimate_time + (zero_arr[i+1] - zero_arr[i])
     estimate_time = estimate_time/(2*(L-1)*up_rate)
+    if estimate_time < 0.0001 and estimate_time > -0.0001:
+        print("nuzero s", num_zeros,"zeros\n",zero_arr)
+        print("esttime too small\n",estimate_time)
+        return -1
+    print("est",estimate_time)
     return 1/estimate_time
 
 def main0():
@@ -266,13 +277,13 @@ def main1(sig):
     #print(temp_process_sig)
     #m_slide = mean_window(new_rie,10)
     #len_rie = len(new_rie)
-    time_seg = 7
+    time_seg = 10
     #print(new_rie,"temp_up",up_sig)
     #print("rie\n",new_rie,"temp\n",temp_process_sig,"up\n",up_sig,"temp_sig\n",temp_sig)
     #shim = shimmer(sig,len_rie-time_seg*alpha-100,len_rie-100)
     shim = shimmer(sig, len(sig)-1-time_seg,len(sig)-1)
-    start = len(new_rie)-1-20*alpha
-    end = len(new_rie)-1
+    start = len(new_rie)-1-50*alpha
+    end = len(new_rie)-1-10*alpha
     #print(new_rie[start:end])
     freq = find_freq(new_rie[start:end],alpha)
     all_states = five_states(new_rie[start:end])
@@ -297,10 +308,7 @@ def is_sleep_apnea():
     if(len(sig_) > threshold+2):
         [shim,freq,all_states,steep] = main1(sig_)
         return [shim,freq,all_states,steep]
-        #print(shim)
-        #print("sleep apnea",test)
-    return 0
-    #print("no sleep apnea",len(sig))
+    return [999,0,[0,0,0,0,0],9999]
 
 '''
 def main2():

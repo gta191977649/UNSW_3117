@@ -82,20 +82,10 @@ def send_command(
     return client.send_command_to_device(device_path, data)
 
 def callback(message):
-    #print('Received message: {}'.format(message.data))
-    #print(message.data)
     msg = message.data
     data = json.loads(msg.decode("utf-8"))
     print(data["pump"])
     vol[0] = data["pump"]
-    #print(data["pump"])
-    #pub = "0"
-    #future = publisher.publish(topic_path,data = pub.encode('utf-8'))
-    #future.pop(pub)
-    '''
-    f = open("sen_result.txt","a")
-    f.write(str(light_num) + ",")
-    '''
     message.ack()
 
 def publish(client, topic_path):
@@ -153,5 +143,5 @@ def thread_function():
 #send_command(service_account_json, project_id, cloud_region, registry_id, device_id,"1")
 while True:
     time.sleep(1)
-    x = threading.Thread(target = thread_function, args = ())
-    x.start()
+    #x = threading.Thread(target = thread_function, args = ())
+    #x.start()

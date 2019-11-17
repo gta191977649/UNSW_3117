@@ -29,9 +29,14 @@ freq_data["y"] = [] #频率数据y
 shimmer_data = {} #Shimmer 数据
 shimmer_data["x"] = [] #Shimmer 数据x
 shimmer_data["y"] = [] #Shimmer 数据y
+vol_data = {} #vol 数据
+vol_data["x"] = [] #Shimmer 数据x
+vol_data["y"] = [] #Shimmer 数据y
+#判断是不是apnea
+apnea = False
 
 #打包准备前端web数据
-def packData(inState,freq,shimmer):
+def packData(inState,freq,shimmer,vol):
     global state
     for i in range(0, len(state)):
         state[i] += inState[i]
@@ -53,15 +58,25 @@ def packData(inState,freq,shimmer):
     shimmer_data["y"].append(shimmer)
 
 
+    #shimmer_data["y"].append(breath)
+
+    if (len(vol_data["x"]) > time_slice_len):
+        vol_data["x"].pop(0)
+        vol_data["y"].pop(0)
+    vol_data["x"].append(current_step)
+    breath = 45 - float(vol)
+    vol_data["y"].append(breath)
 @webservice.route("/")
 def services():
     data = {
         "state": state,
         "freq": freq_data,
         "shimmer": shimmer_data,
+        "vol": vol_data,
+        "apnea": apnea,
     }
 
-    print(data)
+    #print(data)
     data = json.dumps(data)
     resp = Response(data, status=200, mimetype='application/json')
     return resp
@@ -141,20 +156,10 @@ def send_command(
     return client.send_command_to_device(device_path, data)
 
 def callback(message):
-    #print('Received message: {}'.format(message.data))
-    #print(message.data)
     msg = message.data
     data = json.loads(msg.decode("utf-8"))
     print(data["pump"])
     vol[0] = data["pump"]
-    #print(data["pump"])
-    #pub = "0"
-    #future = publisher.publish(topic_path,data = pub.encode('utf-8'))
-    #future.pop(pub)
-    '''
-    f = open("sen_result.txt","a")
-    f.write(str(light_num) + ",")
-    '''
     message.ack()
 
 def publish(client, topic_path):
@@ -191,35 +196,53 @@ def mean_states():
     return avgs
 
 def thread_function():
-    try:
-        update_sig(float(vol[0]))
-        avgs = mean_states()
-        [shim,freq,five_state,steep] = is_sleep_apnea()
+    #try:
+    update_sig(float(vol[0]))
+    avgs = mean_states()
+    [shim,freq,five_state,steep] = is_sleep_apnea()
 
-        #保存&更新接收到的数据到WEB服务
-        packData(five_state,freq,shim)
+    #保存&更新接收到的数据到WEB服务
+    packData(five_state,freq,shim,float(vol[0]))
 
-        if((shim < 1.6 and steep < 2) or (shim < 2.5 and steep < 0.5)):
-            state = 1
-        else:
-            state = 0
-        update_states(state)
-        if(state == 1 and avgs >= 3):
-            send_command(service_account_json, project_id, cloud_region, registry_id, device_id,"0")
-        if(last_state[0] == 1 and state == 0):
-            send_command(service_account_json, project_id, cloud_region, registry_id, device_id,"1")
-        last_state[0] = state
-    except:
-        print("not connected!")
+    if((shim < 1.6 and steep < 2) or (shim < 2.5 and steep < 0.5)):
+        if((shim < 1.6 and steep < 2)):
+            print("sta1", shim, steep)
+        if((shim < 2.5 and steep < 0.5)):
+            print("sta1")
+        state = 1
+    else:
+        state = 0
+    update_states(state)
+    if(state == 1 and avgs >= 3 and (float(vol[0]) > 39)):
+        send_command(service_account_json, project_id, cloud_region, registry_id, device_id,"0")
+        apnea = True
+        print("apnea")
+    #if((last_state[0] == 1 and state == 0) and (float(vol[0]) < 39)):
+    if((state == 0) and (float(vol[0]) < 39)):
+        send_command(service_account_json, project_id, cloud_region, registry_id, device_id,"1")
+        apnea = False
+        print("no apnea")
+    last_state[0] = state
+    #except:
+        #print("not connected!")
 
-#send_command(service_account_json, project_id, cloud_region, registry_id, device_id,"1")
+
+try:
+    send_command(service_account_json, project_id, cloud_region, registry_id, device_id,"1")
+except:
+    time.sleep(1)
 tWebService = threading.Thread(target = runWebServices, args = ())
 tWebService.start()
 
-while True:
-    time.sleep(1)
-    tRecieve = threading.Thread(target = thread_function, args = ())
-    tRecieve.start()
+def main2():
+    while True:
+        time.sleep(1)
+        tRecieve = threading.Thread(target = thread_function, args = ())
+        tRecieve.start()
+
+t_new = threading.Thread(target = main2, args = ())
+t_new.start()
+
 
 
 
