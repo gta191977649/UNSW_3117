@@ -1,6 +1,12 @@
-.App {
+
+.state {
   text-align: center;
   color:white;
 }
-
-
+.state .title {
+  font-weight: bolder;
+}
+.state .value{
+  font-weight: bolder;
+  font-size: 50px;
+}

@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import ReactEcharts from 'echarts-for-react'
 import './App.css'
-const API = 'http://localhost:5000/'
+const API = "http://"+window.location.hostname+":5000";
 class App extends Component {
   constructor(props) {
     super(props)
@@ -92,26 +92,13 @@ class App extends Component {
   async processdata(data) {
     if(data) {
       this.setState({error:false})
-      let sta = Object.keys(data["state"])[0]
 
-      let value = data["state"][sta]
-      switch(sta) {
-        case "weak": 
-          this.setState({weak:this.state.weak+value})
-          break
-        case "mid_weak": 
-          this.setState({mid_weak:this.state.mid_weak+value})
-          break
-        case "mid": 
-          this.setState({mid:this.state.mid+value})
-          break
-        case "mid_strong": 
-          this.setState({mid_strong:this.state.mid_strong+value})
-          break
-        case "strong": 
-          this.setState({strong:this.state.strong+value})
-          break
-      }
+      this.setState({weak:data["state"][0]})
+      this.setState({mid_weak:data["state"][1]})
+      this.setState({mid:data["state"][2]})
+      this.setState({mid_strong:data["state"][3]})
+      this.setState({strong:data["state"][4]})
+
       //freq data
       let freq = {
         x: data["freq"]["x"],
@@ -127,17 +114,20 @@ class App extends Component {
 
     }
   }
+  async fetchData() {
+    fetch(API)
+      .then(response => response.json())
+      .then(data => this.processdata(data))
+      .catch(e => {
+        this.setState({error:true,error_msg:e.toString()})
+      })
+  }
   async componentDidMount() {
+    this.fetchData()
     try {
       setInterval(async() =>{
-        //this.setState({weak:this.state.weak+1})
-        fetch(API)
-        .then(response => response.json())
-        .then(data => this.processdata(data))
-            .catch(e => {
-              this.setState({error:true,error_msg:e.toString()})
-            })
-      },1000) 
+        this.fetchData()
+      },1000)
     } catch(e){
       console.log(e)
     }
@@ -146,23 +136,38 @@ class App extends Component {
     const {weak,mid_weak,mid,mid_strong,strong} = this.state
     
     const content = <React.Fragment>
-      <h1>WEAK:{weak}</h1>
-      <h1>MID_WEAK:{mid_weak}</h1>
-      <h1>MID:{mid}</h1>
-      <h1>MID_STRONG:{mid_strong}</h1>
-      <h1>STRONG:{strong}</h1>
-
+      <div className="row">
+        <div className="col state" style={{color:"#6cff70"}}>
+          <div className="title">WEAK</div>
+          <div className="value">{weak}</div>
+        </div>
+        <div className="col state" style={{color:"#CDDC39"}}>
+          <div className="title">MID WEAK</div>
+          <div className="value">{mid_weak}</div>
+        </div>
+        <div className="col state" style={{color:"#FFEB3B"}}>
+          <div className="title">MID</div>
+          <div className="value">{mid}</div>
+        </div>
+        <div className="col state" style={{color:"#FFC107"}}>
+          <div className="title">MID STRONG</div><div className="value">{mid_strong}</div>
+        </div>
+        <div className="col state" style={{color:"#ff6b6b"}}>
+          <div className="title">STRONG</div><div className="value">{strong}</div>
+        </div>
+      </div>
+      <div className="text-center" style={{color:"#ff6b6b"}}><h1>FREQUENCY</h1></div>
       <ReactEcharts option={this.getFreqOptions()} />
+      <div className="text-center" style={{color:"#00FFB2"}}><h1>SHIMMER</h1></div>
       <ReactEcharts option={this.getShimmerOptions()} />
-
-    </React.Fragment>   
-
+    </React.Fragment>
     const error = <React.Fragment>
       <h1>Net work error</h1>
       <p>{this.state.error_msg}</p>
     </React.Fragment>
     return (
-      <div className="App">
+      <div className="container-fluid">
+
         {this.state.error ? error : content}
       </div>
     );
